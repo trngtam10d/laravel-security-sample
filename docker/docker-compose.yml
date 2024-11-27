@@ -1,0 +1,65 @@
+version: '3.7'
+
+services:
+
+  ####################################################################################################
+  # PHP
+  ####################################################################################################
+  security-passport:
+    build:
+      args:
+        user: ${WWWUSER}
+        uid: ${WWWUID}
+        php_version: ${PHP_VERSION}
+      context: ./
+      dockerfile: Dockerfile
+    image: php:${PHP_VERSION}-apache
+    container_name: ${PROJECT_NAME}-security-passport
+    working_dir: /var/www/html
+    extra_hosts:
+      - ${PROJECT_NAME}.local:127.0.0.1
+    ports:
+      - 80:80
+    volumes:
+      - ../security-passport:/var/www/html
+    links:
+      - db
+
+  ####################################################################################################
+  # DATABASE
+  ####################################################################################################
+  db:
+    image: mysql:latest
+    container_name: ${PROJECT_NAME}-mysql
+    volumes:
+      - ./db/data:/var/lib/mysql
+      - ./logs:/var/log/mysql
+      - ./db/my.cnf:/etc/mysql/conf.d/my.cnf
+      - ./db/sql:/docker-entrypoint-initdb.d
+    environment:
+      MYSQL_DATABASE: ${PROJECT_NAME}
+      MYSQL_ROOT_PASSWORD: ${PASSWORD}
+
+  ####################################################################################################
+  # PHPMYADMIN
+  ####################################################################################################
+  phpmyadmin:
+    image: phpmyadmin:latest
+    container_name: ${PROJECT_NAME}-pma
+    environment:
+      PMA_HOST: db
+      PMA_PORT: 3306
+      UPLOAD_LIMIT: 2M
+    ports:
+      - 8080:80
+
+  ####################################################################################################
+  # Redis
+  ####################################################################################################
+  # redis:
+  #   image: redis:latest
+  #   command: redis-server --appendonly yes
+  #   volumes:
+  #     - .docker/redis/data:/data
+  #   ports:
+  #     - 6379:6379
